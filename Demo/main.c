@@ -317,6 +317,10 @@ uint8_t *pucRxBuffer;
 
 
 int main(void) {
+
+
+    uart_init();
+    hexstring(0x12345678);
 	SetGpioFunction(47, 1);			// RDY led
 
 	initFB();
