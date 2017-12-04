@@ -5,4 +5,8 @@ kernel.syms
 kernel7.img
 objects.mk
 build/
+GPATH
+GRTAGS
+GSYMS
+GTAGS
 
