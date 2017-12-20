@@ -47,6 +47,17 @@ void SetGpioFunction(unsigned int pinNum, unsigned int funcNum) {
 	val |= ((funcNum & 0x7) << (item * 3));
 	pRegs->GPFSEL[offset] = val;
 }
+void SetGpioConf(unsigned int pinNum, unsigned int gppud){
+
+	unsigned int ra;
+	unsigned int off = pinNum / 32;
+	unsigned int bit = pinNum % 32;
+	pRegs->GPPUD[0] = gppud;
+	for(ra=0;ra<300;ra++) dummy(ra);
+	pRegs->GPPUDCLK[off] = 1<<pinNum;
+	for(ra=0;ra<300;ra++) dummy(ra);
+	pRegs->GPPUDCLK[off] = 0;
+}
 
 void SetGpioDirection(unsigned int pinNum, enum GPIO_DIR dir) {
 	SetGpioFunction(pinNum,dir);

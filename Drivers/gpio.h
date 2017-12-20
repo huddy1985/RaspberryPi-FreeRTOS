@@ -31,6 +31,7 @@ void SetGpioFunction	(unsigned int pinNum, unsigned int funcNum);
 /* A simple wrapper around SetGpioFunction */
 void SetGpioDirection	(unsigned int pinNum, enum GPIO_DIR dir);
 
+void SetGpioConf(unsigned int pinNum, unsigned int gppud);
 /* Set GPIO output level */
 void SetGpio			(unsigned int pinNum, unsigned int pinVal);
 

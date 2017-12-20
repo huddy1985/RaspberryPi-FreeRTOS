@@ -23,6 +23,8 @@ extern void dummy ( unsigned int );
 #define GPPUD           (PBASE+0x00200094)
 #define GPPUDCLK0       (PBASE+0x00200098)
 
+//in linux those are defined in serial_reg.h
+
 #define AUX_ENABLES     (PBASE+0x00215004)
 #define AUX_MU_IO_REG   (PBASE+0x00215040)
 #define AUX_MU_IER_REG  (PBASE+0x00215044)
@@ -36,9 +38,15 @@ extern void dummy ( unsigned int );
 #define AUX_MU_STAT_REG (PBASE+0x00215064)
 #define AUX_MU_BAUD_REG (PBASE+0x00215068)
 
+#define IRQ_ENABLE1     (PBASE+0x0000B210)
+
 //GPIO14  TXD0 and TXD1
 //GPIO15  RXD0 and RXD1
 //------------------------------------------------------------------------
+
+void irq_enable1(){
+    PUT32(IRQ_ENABLE1,1<<29);
+}
 unsigned int uart_lcr ( void )
 {
     return(GET32(AUX_MU_LSR_REG));
@@ -59,6 +67,17 @@ unsigned int uart_check ( void )
     return(0);
 }
 //------------------------------------------------------------------------
+void uart_string ( char* str )
+{
+    for(char* s = str;s++;*s != '\0'){
+        while(1)
+            {
+                if(GET32(AUX_MU_LSR_REG)&0x20) break;
+            }
+        PUT32(AUX_MU_IO_REG,*s);
+    }
+}
+
 void uart_send ( unsigned int c )
 {
     while(1)
@@ -103,28 +122,26 @@ void hexstring ( unsigned int d )
 //------------------------------------------------------------------------
 void uart_init ( void )
 {
-    unsigned int ra;
 
     PUT32(AUX_ENABLES,1);
+
     PUT32(AUX_MU_IER_REG,0);
     PUT32(AUX_MU_CNTL_REG,0);
-    PUT32(AUX_MU_LCR_REG,3);
+    PUT32(AUX_MU_LCR_REG,3);//set data word length to 8
     PUT32(AUX_MU_MCR_REG,0);
-    PUT32(AUX_MU_IER_REG,0);
-    PUT32(AUX_MU_IIR_REG,0xC6);
+    PUT32(AUX_MU_IER_REG,0x5);//enanble rx intterupt
+    PUT32(AUX_MU_IIR_REG,0xC6);//1110 0110
     PUT32(AUX_MU_BAUD_REG,270);
-    ra=GET32(GPFSEL1);
-    ra&=~(7<<12); //gpio14
-    ra|=2<<12;    //alt5
-    ra&=~(7<<15); //gpio15
-    ra|=2<<15;    //alt5
-    PUT32(GPFSEL1,ra);
-    PUT32(GPPUD,0);
-    for(ra=0;ra<150;ra++) dummy(ra);
-    PUT32(GPPUDCLK0,(1<<14)|(1<<15));
-    for(ra=0;ra<150;ra++) dummy(ra);
-    PUT32(GPPUDCLK0,0);
-    PUT32(AUX_MU_CNTL_REG,3);
+
+    SetGpioFunction(14,0);
+    SetGpioFunction(14,2);//alt5
+    SetGpioConf(14,0);//disable pull-up/down
+
+    SetGpioFunction(15,0);
+    SetGpioFunction(15,2);//alt5
+    SetGpioConf(15,0);//disable pull-up/down
+    PUT32(AUX_MU_CNTL_REG,3);//enable tx and rx
+
 }
 //------------------------------------------------------------------------
 void  timer_init ( void )
