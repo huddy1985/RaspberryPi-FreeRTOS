@@ -37,7 +37,7 @@ void task1() {
 	int i = 0;
 	char c = 'A';
 	portTickType dstep = 100;
-	unsigned int set;
+	unsigned int set = 0;
 
 	while(1) {
 
