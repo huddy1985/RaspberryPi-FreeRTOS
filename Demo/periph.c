@@ -129,8 +129,10 @@ void uart_init ( void )
     PUT32(AUX_MU_CNTL_REG,0);
     PUT32(AUX_MU_LCR_REG,3);//set data word length to 8
     PUT32(AUX_MU_MCR_REG,0);
-    PUT32(AUX_MU_IER_REG,0x5);//enanble rx intterupt
-    PUT32(AUX_MU_IIR_REG,0xC6);//1110 0110
+    //bit 0: receive interrupt,
+    //Bits 3:2 are marked as don't care, but are actually required in order to receive interrupts.
+    PUT32(AUX_MU_IER_REG,0x5);//enanble rx interupt 0101
+    PUT32(AUX_MU_IIR_REG,0xC6);//1100 0001
     PUT32(AUX_MU_BAUD_REG,270);
 
     SetGpioFunction(14,0);
