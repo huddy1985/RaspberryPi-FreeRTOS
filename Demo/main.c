@@ -42,26 +42,10 @@ volatile char int_rx_count;
 
 #define PBASE 0x3F000000
 
-#define AUX_ENABLES     (PBASE+0x00215004)
 #define AUX_MU_IO_REG   (PBASE+0x00215040)
-#define AUX_MU_IER_REG  (PBASE+0x00215044)
 #define AUX_MU_IIR_REG  (PBASE+0x00215048)
-#define AUX_MU_LCR_REG  (PBASE+0x0021504C)
-#define AUX_MU_MCR_REG  (PBASE+0x00215050)
-#define AUX_MU_LSR_REG  (PBASE+0x00215054)
-#define AUX_MU_MSR_REG  (PBASE+0x00215058)
-#define AUX_MU_SCRATCH  (PBASE+0x0021505C)
-#define AUX_MU_CNTL_REG (PBASE+0x00215060)
-#define AUX_MU_STAT_REG (PBASE+0x00215064)
-#define AUX_MU_BAUD_REG (PBASE+0x00215068)
 
-extern void PUT32 ( unsigned int, unsigned int );
-extern void PUT16 ( unsigned int, unsigned int );
-extern void PUT8 ( unsigned int, unsigned int );
 extern unsigned int GET32 ( unsigned int );
-extern void dummy ( unsigned int );
-
-//volatile unsigned int irqset;
 
 void my_29_int(int nIRQ, void *pParam){
 
@@ -74,18 +58,21 @@ void my_29_int(int nIRQ, void *pParam){
 		int_rx_count = 'A';
 
 	while(1){ //resolve all interrupts to uart
-			rb=GET32(AUX_MU_IIR_REG);
-			if((rb&1)==1) break; //no more interrupts
-			if((rb&6)==4)
-				{
-					//receiver holds a valid byte
-					rc=GET32(AUX_MU_IO_REG); //read byte from rx fifo
-					//rxbuffer[rxhead]=rc&0xFF;
-					//rxhead=(rxhead+1)&RXBUFMASK;
-					//SetGpio(47, irqset);
-					//irqset = 1 - irqset;
+		rb=GET32(AUX_MU_IIR_REG);
+		if((rb&1)==UART_IIR_NO_INT) break; //no more interrupts
+		if((rb&6)==UART_IIR_RDI)
+			{
+				//receiver holds a valid byte
+				rc=GET32(AUX_MU_IO_REG); //read byte from rx fifo
+				//rxbuffer[rxhead]=rc&0xFF;
+				//rxhead=(rxhead+1)&RXBUFMASK;
+				//SetGpio(47, irqset);
+				//irqset = 1 - irqset;
 				}
-		}
+	}
+
+	//this version is taken from the linux kernel code for rpi - /home/dafna/pi/pi-linux/drivers/tty/serial/8250/8250_port.c
+	//function serial8250_handle_irq
 	/*
 	if (iir & UART_IIR_NO_INT)//No interrupt pending
 		return 0;
