@@ -44,6 +44,7 @@ volatile char int_rx_count;
 
 #define AUX_MU_IO_REG   (PBASE+0x00215040)
 #define AUX_MU_IIR_REG  (PBASE+0x00215048)
+#define AUX_MU_LSR_REG  (PBASE+0x00215054)
 
 extern unsigned int GET32 ( unsigned int );
 
@@ -52,13 +53,16 @@ void my_29_int(int nIRQ, void *pParam){
 	unsigned char status;
 
 	unsigned int rb,rc;
-	int_rx_count++;
 
-	if(int_rx_count>'Z')
-		int_rx_count = 'A';
+	rb = GET32(AUX_MU_IIR_REG);
+	if(rb & UART_IIR_NO_INT)
+		return;
 
+
+
+	/*
 	while(1){ //resolve all interrupts to uart
-		rb=GET32(AUX_MU_IIR_REG);
+		rb=
 		if((rb&1)==UART_IIR_NO_INT) break; //no more interrupts
 		if((rb&6)==UART_IIR_RDI)
 			{
@@ -70,6 +74,7 @@ void my_29_int(int nIRQ, void *pParam){
 				//irqset = 1 - irqset;
 				}
 	}
+	*/
 
 	//this version is taken from the linux kernel code for rpi - /home/dafna/pi/pi-linux/drivers/tty/serial/8250/8250_port.c
 	//function serial8250_handle_irq
@@ -77,14 +82,23 @@ void my_29_int(int nIRQ, void *pParam){
 	if (iir & UART_IIR_NO_INT)//No interrupt pending
 		return 0;
 
-
+	*/
 	status = GET32(AUX_MU_LSR_REG);
 
 	//#define UART_LSR_DR		0x01 // Receiver data ready
-	if (status & (UART_LSR_DR | UART_LSR_BI)) {
-		status = serial8250_rx_chars(up, status);
+	while(status & (UART_LSR_DR | UART_LSR_BI)) {
+		//status = serial8250_rx_chars(up, status);
+
+
+		int_rx_count++;
+
+		if(int_rx_count>'Z')
+			int_rx_count = 'A';
+
+		rc=GET32(AUX_MU_IO_REG);
+		status = GET32(AUX_MU_LSR_REG);
 	}
-	*/
+
 
 }
 
