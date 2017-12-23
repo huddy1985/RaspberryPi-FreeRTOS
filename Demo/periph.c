@@ -132,9 +132,11 @@ void uart_init ( void )
     GET32(AUX_MU_LSR_REG);
     //bit 0: receive interrupt,
     //Bits 3:2 are marked as don't care, but are actually required in order to receive interrupts.
-    PUT32(AUX_MU_IER_REG,0x5);//enanble rx interupt 0101
+    PUT32(AUX_MU_IER_REG,0x5);//enanble rx interupts 0101
     PUT32(AUX_MU_IIR_REG,0xC6);//1100 0001
     PUT32(AUX_MU_BAUD_REG,270);
+
+    GET32(AUX_MU_IO_REG);
 
     SetGpioFunction(14,0);
     SetGpioFunction(14,2);//alt5

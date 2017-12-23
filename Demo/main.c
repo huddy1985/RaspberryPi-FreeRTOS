@@ -25,6 +25,18 @@ typedef long int32_t;
 
 volatile char int_rx_count;
 
+#define RX_BUF_LEN 4096
+#define TX_BUF_LEN 4096
+
+
+volatile unsigned char rxbuffer[RX_BUF_LEN];
+volatile unsigned char txbuffer[TX_BUF_LEN];
+
+volatile int rxbuffer_idx;
+volatile int tx_head;
+volatile int tx_tail;
+volatile int tx_to_write;
+
 #define UART_IIR	2	/* In:  Interrupt ID Register */
 #define UART_IIR_NO_INT		0x01 /* No interrupts pending */
 #define UART_IIR_ID		0x0e /* Mask for the interrupt ID */ // e=1110
@@ -33,6 +45,7 @@ volatile char int_rx_count;
 #define UART_IIR_RDI		0x04 /* Receiver data interrupt */
 #define UART_IIR_RLSI		0x06 /* Receiver line status interrupt */
 
+#define UART_LSR_THRE		0x20 /* Transmit-hold-register empty */
 #define UART_LSR_BI		0x10 /* Break interrupt indicator */
 #define UART_LSR_FE		0x08 /* Frame error indicator */
 #define UART_LSR_PE		0x04 /* Parity error indicator */
@@ -85,10 +98,7 @@ void my_29_int(int nIRQ, void *pParam){
 	*/
 	status = GET32(AUX_MU_LSR_REG);
 
-	//#define UART_LSR_DR		0x01 // Receiver data ready
-	while(status & (UART_LSR_DR | UART_LSR_BI)) {
-		//status = serial8250_rx_chars(up, status);
-
+	while(status & (UART_LSR_DR | UART_LSR_BI)) {//#define UART_LSR_DR		0x01 // Receiver data ready
 
 		int_rx_count++;
 
@@ -96,10 +106,40 @@ void my_29_int(int nIRQ, void *pParam){
 			int_rx_count = 'A';
 
 		rc=GET32(AUX_MU_IO_REG);
+		rxbuffer[rxbuffer_idx] = rc;
+		rxbuffer_idx = (rxbuffer_idx+1) % RX_BUF_LEN;
 		status = GET32(AUX_MU_LSR_REG);
 	}
 
 
+	//tail is always cylclicly lower than head
+	while ( (status & UART_LSR_THRE) && tx_to_write > 0) {
+		PUT32(AUX_MU_IO_REG,txbuffer[tx_tail]);
+		tx_to_write--;
+		tx_tail = (tx_tail+1) % TX_BUF_LEN;
+		status = GET32(AUX_MU_LSR_REG);
+	}
+}
+
+
+/* if there is space in the buffer, that is to_write<TX_BUF_LEN then this task add sum text to the buffer starting from head*/
+
+#define ABC_LEN 26
+void tx_blabla_task() {
+	int i = 0;
+	char c = 0;
+	portTickType dstep = 100;
+	unsigned int set = 0;
+
+	while(1){
+		for(int i=0;i < 3 && tx_to_write< TX_BUF_LEN ;i++){
+			txbuffer[tx_head] = 'A'+c;
+			c = (c + 1)% ABC_LEN;
+			tx_head = (tx_head+1) % TX_BUF_LEN;
+			tx_to_write++;
+		}
+		vTaskDelay(300);
+	}
 }
 
 
@@ -163,6 +203,15 @@ int main(void) {
 	RegisterInterrupt(29, my_29_int, NULL);
 	EnableInterrupt(29);
 
+	memset(rxbuffer,0,RX_BUF_LEN);
+	memset(rxbuffer,0,TX_BUF_LEN);
+
+	rxbuffer_idx = 0;
+	tx_head = 0;
+	tx_tail = 0;
+	tx_to_write = 0;
+
+
 	//ensure the IP and gateway match the router settings!
 	//const unsigned char ucIPAddress[ 4 ] = {192, 168, 1, 42};
 	const unsigned char ucIPAddress[ 4 ] = {192, 168, 1, 9};
@@ -176,8 +225,8 @@ int main(void) {
 	//xTaskCreate(serverTask, "server", 128, NULL, 0, NULL);
 	//xTaskCreate(serverListenTask, "server", 128, NULL, 0, NULL);
 
-	xTaskCreate(task1, "LED_0", 128, NULL, 0, NULL);
-	//xTaskCreate(task2, "LED_1", 128, NULL, 0, NULL);
+	xTaskCreate(task1, "LED_0", 128, NULL, 1, NULL);
+	xTaskCreate(tx_blabla_task, "LED_1", 128, NULL, 1, NULL);
 
 	//set to 0 for no debug, 1 for debug, or 2 for GCC instrumentation (if enabled in config)
 	loaded = 1;
