@@ -131,10 +131,14 @@ void tx_blabla_task() {
 	portTickType dstep = 100;
 	unsigned int set = 0;
 
+	char chars[3] = {0,'\r'-'A','\n'-'A'};
+
 	while(1){
 		for(int i=0;i < 3 && tx_to_write< TX_BUF_LEN ;i++){
-			txbuffer[tx_head] = 'A'+c;
-			c = (c + 1)% ABC_LEN;
+			txbuffer[tx_head] = 'A'+chars[i];
+			if(i == 0)
+				chars[i] = (chars[i] + 1)% ABC_LEN;
+
 			tx_head = (tx_head+1) % TX_BUF_LEN;
 			tx_to_write++;
 		}
