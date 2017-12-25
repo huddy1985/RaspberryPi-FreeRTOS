@@ -132,8 +132,9 @@ void uart_init ( void )
     GET32(AUX_MU_LSR_REG);
     //bit 0: receive interrupt,
     //Bits 3:2 are marked as don't care, but are actually required in order to receive interrupts.
-    PUT32(AUX_MU_IER_REG,0x5);//enanble rx interupts 0101
-    PUT32(AUX_MU_IIR_REG,0xC6);//1100 0001
+    PUT32(AUX_MU_IER_REG,0x05);//enanble rx interupts 0101
+
+    PUT32(AUX_MU_IIR_REG,0xC6);//1100 0110
     PUT32(AUX_MU_BAUD_REG,270);
 
     GET32(AUX_MU_IO_REG);
@@ -145,7 +146,26 @@ void uart_init ( void )
     SetGpioFunction(15,0);
     SetGpioFunction(15,2);//alt5
     SetGpioConf(15,2);// enable pull-up
+
+
+    unsigned int status, tmout = 10000;
+#define UART_LSR_THRE 0x20
+    for (;;) {
+		status = GET32(AUX_MU_LSR_REG);
+
+		if ((status & UART_LSR_THRE) == UART_LSR_THRE)
+			break;
+		if (--tmout == 0)
+			break;
+        dummy(1);
+        dummy(2);
+
+		//touch_nmi_watchdog();
+	}
+
     PUT32(AUX_MU_CNTL_REG,3);//enable tx and rx
+
+
 
 }
 //------------------------------------------------------------------------

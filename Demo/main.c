@@ -32,10 +32,14 @@ volatile char int_rx_count;
 volatile unsigned char rxbuffer[RX_BUF_LEN];
 volatile unsigned char txbuffer[TX_BUF_LEN];
 
-volatile int rxbuffer_idx;
 volatile int tx_head;
 volatile int tx_tail;
 volatile int tx_to_write;
+
+volatile int rx_head;
+volatile int rx_tail;
+volatile int rx_to_write;
+
 
 #define UART_IIR	2	/* In:  Interrupt ID Register */
 #define UART_IIR_NO_INT		0x01 /* No interrupts pending */
@@ -61,12 +65,27 @@ volatile int tx_to_write;
 
 extern unsigned int GET32 ( unsigned int );
 
+void serial8250_tx_chars(){
+	unsigned char status;
+	while(1){
+		status = GET32(AUX_MU_LSR_REG);
+		while ( (status & UART_LSR_THRE) && tx_to_write > 0) {
+			PUT32(AUX_MU_IO_REG,txbuffer[tx_tail]);
+			tx_to_write--;
+			tx_tail = (tx_tail+1) % TX_BUF_LEN;
+			status = GET32(AUX_MU_LSR_REG);
+		}
+		vTaskDelay(500);
+	}
+
+}
 void my_29_int(int nIRQ, void *pParam){
 
 	unsigned char status;
 
 	unsigned int rb,rc;
 
+	//return;
 	rb = GET32(AUX_MU_IIR_REG);
 	if(rb & UART_IIR_NO_INT)
 		return;
@@ -106,17 +125,26 @@ void my_29_int(int nIRQ, void *pParam){
 			int_rx_count = 'A';
 
 		rc=GET32(AUX_MU_IO_REG);
-		rxbuffer[rxbuffer_idx] = rc;
-		rxbuffer_idx = (rxbuffer_idx+1) % RX_BUF_LEN;
+		//rxbuffer[rxbuffer_idx] = rc;
+		//rxbuffer_idx = (rxbuffer_idx+1) % RX_BUF_LEN;
+
+		rxbuffer[rx_head] = rc;
+		rx_head = (rx_head+1) % RX_BUF_LEN;
+		rx_to_write++;
+
 		status = GET32(AUX_MU_LSR_REG);
+
 	}
 
-
+	unsigned int set = 0;
 	//tail is always cylclicly lower than head
 	while ( (status & UART_LSR_THRE) && tx_to_write > 0) {
 		PUT32(AUX_MU_IO_REG,txbuffer[tx_tail]);
 		tx_to_write--;
 		tx_tail = (tx_tail+1) % TX_BUF_LEN;
+		set = 1 - set;
+		SetGpio(47, set);
+
 		status = GET32(AUX_MU_LSR_REG);
 	}
 }
@@ -138,6 +166,15 @@ void tx_blabla_task() {
 			txbuffer[tx_head] = 'A'+chars[i];
 			if(i == 0)
 				chars[i] = (chars[i] + 1)% ABC_LEN;
+
+			tx_head = (tx_head+1) % TX_BUF_LEN;
+			tx_to_write++;
+		}
+		for(int i=0;i< 7 && rx_to_write > 0;i++){
+			txbuffer[tx_head] = rxbuffer[rx_tail];
+
+			rx_to_write--;
+			rx_tail = (rx_tail+1) % TX_BUF_LEN;
 
 			tx_head = (tx_head+1) % TX_BUF_LEN;
 			tx_to_write++;
@@ -207,13 +244,17 @@ int main(void) {
 	RegisterInterrupt(29, my_29_int, NULL);
 	EnableInterrupt(29);
 
-	memset(rxbuffer,0,RX_BUF_LEN);
-	memset(rxbuffer,0,TX_BUF_LEN);
+	memset(rxbuffer,'X',RX_BUF_LEN);
+	memset(rxbuffer,'X',TX_BUF_LEN);
 
-	rxbuffer_idx = 0;
+
 	tx_head = 0;
 	tx_tail = 0;
 	tx_to_write = 0;
+
+	rx_head = 0;
+	rx_tail = 0;
+	rx_to_write = 0;
 
 
 	//ensure the IP and gateway match the router settings!
@@ -231,7 +272,7 @@ int main(void) {
 
 	xTaskCreate(task1, "LED_0", 128, NULL, 1, NULL);
 	xTaskCreate(tx_blabla_task, "LED_1", 128, NULL, 1, NULL);
-
+	xTaskCreate(serial8250_tx_chars, "LED_1", 128, NULL, 1, NULL);
 	//set to 0 for no debug, 1 for debug, or 2 for GCC instrumentation (if enabled in config)
 	loaded = 1;
 
