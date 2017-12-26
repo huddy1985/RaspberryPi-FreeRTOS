@@ -91,11 +91,11 @@ void serial8250_rx_chars(){
 }
 
 
-void serial_writer_task(){
+void serial_writer_task(void* write_delay){
 	while(1){
 		if(tx_to_write > 0 &&  (GET32(AUX_MU_LSR_REG) & UART_LSR_THRE))
 			serial8250_tx_chars();
-		vTaskDelay(500);
+		vTaskDelay((long)write_delay);
 	}
 }
 
@@ -129,6 +129,7 @@ void my_29_int(int nIRQ, void *pParam){
 void uart_init ( void )
 {
 
+  int_rx_count = 'A';
   tx_head = 0;
   tx_tail = 0;
   tx_to_write = 0;

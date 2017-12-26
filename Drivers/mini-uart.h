@@ -1,9 +1,10 @@
 #ifndef _MINI_UART_H_
 #define _MINI_UART_H_
 
+//this counter is for debug only
 volatile char int_rx_count;
 
-void serial_writer_task();
+void serial_writer_task(void* write_delay);
 
 int mini_uart_write(const char *buf, int count);
 

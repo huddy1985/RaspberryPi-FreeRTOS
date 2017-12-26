@@ -19,14 +19,6 @@
 //   include private header
 #include "FreeRTOS_IP_Private.h"
 
-
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef long int32_t;
-
-
-
-
 /* if there is space in the buffer, that is to_write<TX_BUF_LEN then this task add sum text to the buffer starting from head*/
 
 #define ABC_LEN 26
@@ -41,29 +33,7 @@ void tx_blabla_task() {
 	while(1){
 		mini_uart_write(chars,4);
 		chars[0] = 'A' + ((chars[0]-'A' + 1)% ABC_LEN);
-		/*
-		for(int i=0;i < 3 && tx_to_write< TX_BUF_LEN ;i++){
-			txbuffer[tx_head] = 'A'+chars[i];
-			if(i == 0)
-			chars[i] = (chars[i] + 1)% ABC_LEN;
-
-			tx_head = (tx_head+1) % TX_BUF_LEN;
-			tx_to_write++;
-		}
-		*/
 		mini_uart_read(chars+1,1);
-
-		/*
-		for(int i=0;i< 7 && rx_to_write > 0;i++){
-			txbuffer[tx_head] = rxbuffer[rx_tail];
-
-			rx_to_write--;
-			rx_tail = (rx_tail+1) % TX_BUF_LEN;
-
-			tx_head = (tx_head+1) % TX_BUF_LEN;
-			tx_to_write++;
-		}
-		*/
 		vTaskDelay(300);
 	}
 }
@@ -99,11 +69,10 @@ void task1() {
 
 int main(void) {
 
-
-
 	SetGpioFunction(47, 1);			// RDY led
 
 	initFB();
+
 	SetGpio(47, 1);
 	//videotest();
 
@@ -111,22 +80,6 @@ int main(void) {
 	InitInterruptController();
 
 	uart_init();
-
-	int_rx_count = 'A';
-
-
-	//memset(rxbuffer,'X',RX_BUF_LEN);
-	//memset(rxbuffer,'X',TX_BUF_LEN);
-
-
-	//tx_head = 0;
-	//tx_tail = 0;
-	//tx_to_write = 0;
-
-	//rx_head = 0;
-	//rx_tail = 0;
-	//rx_to_write = 0;
-
 
 	//ensure the IP and gateway match the router settings!
 	//const unsigned char ucIPAddress[ 4 ] = {192, 168, 1, 42};
@@ -143,7 +96,9 @@ int main(void) {
 
 	xTaskCreate(task1, "LED_0", 128, NULL, 1, NULL);
 	xTaskCreate(tx_blabla_task, "LED_1", 128, NULL, 1, NULL);
-	xTaskCreate(serial_writer_task, "LED_1", 128, NULL, 1, NULL);
+
+	long write_delay = 100;
+	xTaskCreate(serial_writer_task, "LED_1", 128,(void*)write_delay , 1, NULL);
 	//set to 0 for no debug, 1 for debug, or 2 for GCC instrumentation (if enabled in config)
 	loaded = 1;
 
