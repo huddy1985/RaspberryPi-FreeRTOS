@@ -71,6 +71,7 @@ int main(void) {
 
 	SetGpioFunction(47, 1);			// RDY led
 
+	//for some reason calling this function is necessary for the uart to work
 	initFB();
 
 	SetGpio(47, 1);
