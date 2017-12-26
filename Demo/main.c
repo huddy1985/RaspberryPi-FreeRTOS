@@ -65,24 +65,41 @@ volatile int rx_to_write;
 
 extern unsigned int GET32 ( unsigned int );
 
+/* serial8250_tx_chars, serial8250_rx_chars:
+ * these two functions are based on the same functions in the linux kernel code in drivers/tty/serial/8250/8250_port.c
+ *
+ */
+
+//before calling this function the caller should first check if the condition (tx_to_write > 0 &&  (GET32(AUX_MU_LSR_REG) & UART_LSR_THRE)) is true
 void serial8250_tx_chars(){
-	unsigned char status;
+	do{
+		PUT32(AUX_MU_IO_REG,txbuffer[tx_tail]);
+		tx_to_write--;
+		tx_tail = (tx_tail+1) % TX_BUF_LEN;
+	}	while ( (GET32(AUX_MU_LSR_REG) & UART_LSR_THRE) && tx_to_write > 0);
+}
+
+//before calling this function the caller should first check if the condition status & (UART_LSR_DR | UART_LSR_BI) is true
+void serial8250_rx_chars(){
+	do{
+		rxbuffer[rx_head] = GET32(AUX_MU_IO_REG);
+		rx_head = (rx_head+1) % RX_BUF_LEN;
+		rx_to_write++;
+	}while(GET32(AUX_MU_LSR_REG) & (UART_LSR_DR | UART_LSR_BI));
+}
+
+
+void serial_writer_task(){
 	while(1){
-		status = GET32(AUX_MU_LSR_REG);
-		while ( (status & UART_LSR_THRE) && tx_to_write > 0) {
-			PUT32(AUX_MU_IO_REG,txbuffer[tx_tail]);
-			tx_to_write--;
-			tx_tail = (tx_tail+1) % TX_BUF_LEN;
-			status = GET32(AUX_MU_LSR_REG);
-		}
+		if(tx_to_write > 0 &&  (GET32(AUX_MU_LSR_REG) & UART_LSR_THRE))
+			serial8250_tx_chars();
 		vTaskDelay(500);
 	}
-
 }
+
 void my_29_int(int nIRQ, void *pParam){
 
 	unsigned char status;
-
 	unsigned int rb,rc;
 
 	//return;
@@ -90,62 +107,27 @@ void my_29_int(int nIRQ, void *pParam){
 	if(rb & UART_IIR_NO_INT)
 		return;
 
+	//this counter is just for debugging
+	int_rx_count++;
+	if(int_rx_count>'Z')
+		int_rx_count = 'A';
 
 
-	/*
-	while(1){ //resolve all interrupts to uart
-		rb=
-		if((rb&1)==UART_IIR_NO_INT) break; //no more interrupts
-		if((rb&6)==UART_IIR_RDI)
-			{
-				//receiver holds a valid byte
-				rc=GET32(AUX_MU_IO_REG); //read byte from rx fifo
-				//rxbuffer[rxhead]=rc&0xFF;
-				//rxhead=(rxhead+1)&RXBUFMASK;
-				//SetGpio(47, irqset);
-				//irqset = 1 - irqset;
-				}
-	}
-	*/
-
-	//this version is taken from the linux kernel code for rpi - /home/dafna/pi/pi-linux/drivers/tty/serial/8250/8250_port.c
-	//function serial8250_handle_irq
-	/*
-	if (iir & UART_IIR_NO_INT)//No interrupt pending
-		return 0;
-
-	*/
 	status = GET32(AUX_MU_LSR_REG);
 
-	while(status & (UART_LSR_DR | UART_LSR_BI)) {//#define UART_LSR_DR		0x01 // Receiver data ready
+	if(status & (UART_LSR_DR | UART_LSR_BI)) {//#define UART_LSR_DR		0x01 // Receiver data ready
 
-		int_rx_count++;
+		serial8250_rx_chars();
 
-		if(int_rx_count>'Z')
-			int_rx_count = 'A';
-
-		rc=GET32(AUX_MU_IO_REG);
-		//rxbuffer[rxbuffer_idx] = rc;
-		//rxbuffer_idx = (rxbuffer_idx+1) % RX_BUF_LEN;
-
-		rxbuffer[rx_head] = rc;
-		rx_head = (rx_head+1) % RX_BUF_LEN;
-		rx_to_write++;
-
-		status = GET32(AUX_MU_LSR_REG);
-
+		//rc=GET32(AUX_MU_IO_REG);
+		//rxbuffer[rx_head] = rc;
+		//rx_head = (rx_head+1) % RX_BUF_LEN;
+		//rx_to_write++;
+		//status = GET32(AUX_MU_LSR_REG);
 	}
 
-	unsigned int set = 0;
-	//tail is always cylclicly lower than head
-	while ( (status & UART_LSR_THRE) && tx_to_write > 0) {
-		PUT32(AUX_MU_IO_REG,txbuffer[tx_tail]);
-		tx_to_write--;
-		tx_tail = (tx_tail+1) % TX_BUF_LEN;
-		set = 1 - set;
-		SetGpio(47, set);
-
-		status = GET32(AUX_MU_LSR_REG);
+	if( tx_to_write > 0 && (status & UART_LSR_THRE)) {
+		serial8250_tx_chars();
 	}
 }
 
@@ -244,8 +226,8 @@ int main(void) {
 	RegisterInterrupt(29, my_29_int, NULL);
 	EnableInterrupt(29);
 
-	memset(rxbuffer,'X',RX_BUF_LEN);
-	memset(rxbuffer,'X',TX_BUF_LEN);
+	//memset(rxbuffer,'X',RX_BUF_LEN);
+	//memset(rxbuffer,'X',TX_BUF_LEN);
 
 
 	tx_head = 0;
@@ -272,7 +254,7 @@ int main(void) {
 
 	xTaskCreate(task1, "LED_0", 128, NULL, 1, NULL);
 	xTaskCreate(tx_blabla_task, "LED_1", 128, NULL, 1, NULL);
-	xTaskCreate(serial8250_tx_chars, "LED_1", 128, NULL, 1, NULL);
+	xTaskCreate(serial_writer_task, "LED_1", 128, NULL, 1, NULL);
 	//set to 0 for no debug, 1 for debug, or 2 for GCC instrumentation (if enabled in config)
 	loaded = 1;
 
