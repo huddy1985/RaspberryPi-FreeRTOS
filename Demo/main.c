@@ -116,20 +116,36 @@ void my_29_int(int nIRQ, void *pParam){
 	status = GET32(AUX_MU_LSR_REG);
 
 	if(status & (UART_LSR_DR | UART_LSR_BI)) {//#define UART_LSR_DR		0x01 // Receiver data ready
-
 		serial8250_rx_chars();
-
-		//rc=GET32(AUX_MU_IO_REG);
-		//rxbuffer[rx_head] = rc;
-		//rx_head = (rx_head+1) % RX_BUF_LEN;
-		//rx_to_write++;
-		//status = GET32(AUX_MU_LSR_REG);
 	}
 
 	if( tx_to_write > 0 && (status & UART_LSR_THRE)) {
 		serial8250_tx_chars();
 	}
 }
+
+int mini_uart_write(const char *buf, size_t count){
+
+	int i =0;
+	for(i=0;i < count && tx_to_write< TX_BUF_LEN ;i++){
+		txbuffer[tx_head] = buf[i];
+		tx_head = (tx_head+1) % TX_BUF_LEN;
+		tx_to_write++;
+	}
+	return i;
+}
+
+int mini_uart_read(char *buf, size_t count){
+
+	int i=0;
+	for(i=0; i < count && rx_to_write > 0; i++){
+		buf[i] = rxbuffer[rx_tail];
+		rx_tail = (rx_tail+1) % TX_BUF_LEN;
+		rx_to_write--;
+	}
+	return i;
+}
+
 
 
 /* if there is space in the buffer, that is to_write<TX_BUF_LEN then this task add sum text to the buffer starting from head*/
@@ -141,17 +157,24 @@ void tx_blabla_task() {
 	portTickType dstep = 100;
 	unsigned int set = 0;
 
-	char chars[3] = {0,'\r'-'A','\n'-'A'};
+	char chars[4] = {'A','a','\r','\n'};
 
 	while(1){
+		mini_uart_write(chars,4);
+		chars[0] = 'A' + ((chars[0]-'A' + 1)% ABC_LEN);
+		/*
 		for(int i=0;i < 3 && tx_to_write< TX_BUF_LEN ;i++){
 			txbuffer[tx_head] = 'A'+chars[i];
 			if(i == 0)
-				chars[i] = (chars[i] + 1)% ABC_LEN;
+			chars[i] = (chars[i] + 1)% ABC_LEN;
 
 			tx_head = (tx_head+1) % TX_BUF_LEN;
 			tx_to_write++;
 		}
+		*/
+		mini_uart_read(chars+1,1);
+
+		/*
 		for(int i=0;i< 7 && rx_to_write > 0;i++){
 			txbuffer[tx_head] = rxbuffer[rx_tail];
 
@@ -161,6 +184,7 @@ void tx_blabla_task() {
 			tx_head = (tx_head+1) % TX_BUF_LEN;
 			tx_to_write++;
 		}
+		*/
 		vTaskDelay(300);
 	}
 }
@@ -191,20 +215,6 @@ void task1() {
 		SetGpio(47, set);
 
 		vTaskDelay(dstep);
-	}
-}
-
-void task2() {
-	int i = 0;
-	while(1) {
-		i++;
-        //uart_send('2');
-        //uart_send(0x0a);
-        //uart_send(0x0d);
-
-		vTaskDelay(100);
-		SetGpio(47, 0);
-		vTaskDelay(100);
 	}
 }
 
