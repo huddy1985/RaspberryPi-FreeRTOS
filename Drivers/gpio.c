@@ -29,7 +29,7 @@ typedef struct {
 	unsigned long	GPAFEN[2];
 	unsigned long	Reserved_B;
 	unsigned long	GPPUD[1];
-	unsigned long	GPPUDCLK[2];
+	unsigned long	GPPUDCLK[2];//ofsset 98
 	//Ignoring the reserved and test bytes
 } BCM2835_GPIO_REGS;
 

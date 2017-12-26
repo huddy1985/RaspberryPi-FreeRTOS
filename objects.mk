@@ -18,6 +18,7 @@ OBJECTS += $(BUILD_DIR)FreeRTOS/Source/event_groups.o
 #
 OBJECTS += $(BUILD_DIR)Drivers/interrupts.o
 OBJECTS += $(BUILD_DIR)Drivers/gpio.o
+OBJECTS += $(BUILD_DIR)Drivers/mini-uart.o
 
 $(BUILD_DIR)FreeRTOS/Source/portable/GCC/RaspberryPi/port.o: CFLAGS += -I $(BASE)Demo/
 
@@ -42,7 +43,7 @@ OBJECTS += $(BUILD_DIR)Drivers/mailbox.o
 OBJECTS += $(BUILD_DIR)Demo/trace.o
 OBJECTS += $(BUILD_DIR)Drivers/mem.o
 
-OBJECTS += $(BUILD_DIR)Demo/periph.o
+# OBJECTS += $(BUILD_DIR)Demo/periph.o
 OBJECTS += $(BUILD_DIR)Demo/getpc.o
 
 #video stuff
