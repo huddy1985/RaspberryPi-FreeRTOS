@@ -23,10 +23,6 @@
 
 #define ABC_LEN 26
 void tx_blabla_task() {
-	int i = 0;
-	char c = 0;
-	portTickType dstep = 100;
-	unsigned int set = 0;
 
 	char chars[4] = {'A','a','\r','\n'};
 
@@ -70,30 +66,12 @@ void task1() {
 int main(void) {
 
 	SetGpioFunction(47, 1);			// RDY led
-
-	//for some reason calling this function is necessary for the uart to work
-	initFB();
-
 	SetGpio(47, 1);
-	//videotest();
 
 	DisableInterrupts();
 	InitInterruptController();
 
 	uart_init();
-
-	//ensure the IP and gateway match the router settings!
-	//const unsigned char ucIPAddress[ 4 ] = {192, 168, 1, 42};
-	const unsigned char ucIPAddress[ 4 ] = {192, 168, 1, 9};
-	const unsigned char ucNetMask[ 4 ] = {255, 255, 255, 0};
-	const unsigned char ucGatewayAddress[ 4 ] = {192, 168, 1, 1};
-	const unsigned char ucDNSServerAddress[ 4 ] = {8, 8, 8, 8};
-	//const unsigned char ucMACAddress[ 6 ] = {0xB8, 0x27, 0xEB, 0x19, 0xAD, 0xA7};
-	const unsigned char ucMACAddress[ 6 ] = {0xB8, 0x27, 0xEB, 0xa5, 0x35, 0xC1};
-	FreeRTOS_IPInit(ucIPAddress, ucNetMask, ucGatewayAddress, ucDNSServerAddress, ucMACAddress);
-
-	//xTaskCreate(serverTask, "server", 128, NULL, 0, NULL);
-	//xTaskCreate(serverListenTask, "server", 128, NULL, 0, NULL);
 
 	xTaskCreate(task1, "LED_0", 128, NULL, 1, NULL);
 	xTaskCreate(tx_blabla_task, "LED_1", 128, NULL, 1, NULL);

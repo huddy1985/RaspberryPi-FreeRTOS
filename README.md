@@ -51,7 +51,7 @@ GCC -finstrument-functions enables tracing at the beginning and end of every fun
 The framebuffer is explicitly for debug information, this build does not take full advantage of the RPi GPU. Printing to the screen takes several milliseconds so it is adviseable to disable it. In the demo main.c, set loaded = 0.
 
 ## Dafna
-Added mini uart driver which is non pulling.
+Added mini uart driver which is non polling.
 
 The code is based on the Linux code in /drivers/tty/serial/8250/8250_port.c.
 
