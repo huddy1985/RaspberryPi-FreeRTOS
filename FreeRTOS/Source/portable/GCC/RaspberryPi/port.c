@@ -195,9 +195,9 @@ static void prvSetupTimerInterrupt( void )
 	pRegs->CLI = 0;
 	pRegs->CTL = 0x003E00A2;
 
-	RegisterInterrupt(64, vTickISR, NULL);
+	//RegisterInterrupt(64, vTickISR, NULL);
 
-	EnableInterrupt(64);
+	//EnableInterrupt(64);
 
 	EnableInterrupts();
 }

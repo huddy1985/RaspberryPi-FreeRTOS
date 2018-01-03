@@ -73,13 +73,23 @@ int main(void) {
 
 	uart_init();
 
-	xTaskCreate(task1, "LED_0", 128, NULL, 1, NULL);
-	xTaskCreate(tx_blabla_task, "LED_1", 128, NULL, 1, NULL);
+	//xTaskCreate(task1, "LED_0", 128, NULL, 1, NULL);
+	//xTaskCreate(tx_blabla_task, "LED_1", 128, NULL, 1, NULL);
 
 	long write_delay = 100;
-	xTaskCreate(serial_writer_task, "LED_1", 128,(void*)write_delay , 1, NULL);
+	//xTaskCreate(serial_writer_task, "LED_1", 128,(void*)write_delay , 1, NULL);
 	//set to 0 for no debug, 1 for debug, or 2 for GCC instrumentation (if enabled in config)
 	loaded = 1;
+
+	/*
+	DisableInterrupts();
+	EnableInterrupts();
+
+
+	__asm volatile("mrs 	r0,cpsr");		// Read in the cpsr register.
+	__asm volatile("bic		r0,r0,#0x80");	// Clear bit 8, (0x80) -- Causes IRQs to be enabled
+	__asm volatile("msr		cpsr_c, r0");	// Write it back to the CPSR register
+	*/
 
 	vTaskStartScheduler();
 

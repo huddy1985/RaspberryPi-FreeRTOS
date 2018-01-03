@@ -99,6 +99,7 @@ void serial_writer_task(void* write_delay){
 	}
 }
 
+int x = 0;
 void my_29_int(int nIRQ, void *pParam){
 
 	unsigned char status;
@@ -114,6 +115,8 @@ void my_29_int(int nIRQ, void *pParam){
 	if(int_rx_count>'Z')
 		int_rx_count = 'A';
 
+    SetGpio(47, x);
+    x = 1 - x;
 
 	status = GET32(AUX_MU_LSR_REG);
 
