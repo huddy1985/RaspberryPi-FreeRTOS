@@ -100,6 +100,8 @@ void serial_writer_task(void* write_delay){
 }
 
 int x = 0;
+#define ABC_LEN 26
+char chars[4] = {'A','a','\r','\n'};
 void my_29_int(int nIRQ, void *pParam){
 
 	unsigned char status;
@@ -122,6 +124,10 @@ void my_29_int(int nIRQ, void *pParam){
 
 	if(status & (UART_LSR_DR | UART_LSR_BI)) {//#define UART_LSR_DR		0x01 // Receiver data ready
 		serial8250_rx_chars();
+
+
+        mini_uart_write(chars,4);
+        chars[0] = 'A' + ((chars[0]-'A' + 1)% ABC_LEN);
 	}
 
 	if( tx_to_write > 0 && (status & UART_LSR_THRE)) {

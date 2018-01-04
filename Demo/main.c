@@ -63,10 +63,14 @@ void task1() {
 	}
 }
 
+//extern volatile mytask * volatile pxCurrentTCB;
+//extern PRIVILEGED_DATA tskTCB * volatile pxCurrentTCB;
+
+
 int main(void) {
 
 	SetGpioFunction(47, 1);			// RDY led
-	SetGpio(47, 1);
+	SetGpio(47, 0);
 
 	DisableInterrupts();
 	InitInterruptController();
@@ -81,22 +85,44 @@ int main(void) {
 	//set to 0 for no debug, 1 for debug, or 2 for GCC instrumentation (if enabled in config)
 	loaded = 1;
 
-	/*
-	DisableInterrupts();
+
+
+	//__asm volatile("ldr 	r0,cpsr");		// Read in the cpsr register.
+
+	//portSAVE_CONTEXT()
+
+	//DisableInterrupts();
+	xInitPxCurrentTCB();
 	EnableInterrupts();
 
-
+	/*
 	__asm volatile("mrs 	r0,cpsr");		// Read in the cpsr register.
 	__asm volatile("bic		r0,r0,#0x80");	// Clear bit 8, (0x80) -- Causes IRQs to be enabled
 	__asm volatile("msr		cpsr_c, r0");	// Write it back to the CPSR register
 	*/
 
-	vTaskStartScheduler();
+	char chars[7] = {'s','t','a','r','t','\r','\n'};
+
+
+	//mini_uart_write(chars,7);
+
+	//vTaskStartScheduler();
 
 	/*
 	 *	We should never get here, but just in case something goes wrong,
 	 *	we'll place the CPU into a safe loop.
 	 */
+	volatile unsigned int i = 0;
+
+	while(1){
+		for(i=0;i<10000000;i++)
+			;
+		SetGpio(47,0);
+		for(i=0;i<10000000;i++)
+			;
+		SetGpio(47,1);
+	}
+
 	while(1) {
 		;
 	}
