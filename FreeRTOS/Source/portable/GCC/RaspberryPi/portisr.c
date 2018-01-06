@@ -32,7 +32,7 @@
 
 /* Constants required to handle critical sections. */
 #define portNO_CRITICAL_NESTING		( ( unsigned long ) 0 )
-volatile unsigned long ulCriticalNesting = 9999UL;
+volatile unsigned long ulCriticalNesting = 0UL;//9999UL;
 
 /*-----------------------------------------------------------*/
 

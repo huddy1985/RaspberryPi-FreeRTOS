@@ -10,4 +10,6 @@ int mini_uart_write(const char *buf, int count);
 
 int mini_uart_read(char *buf, int count);
 
+void hexstring ( unsigned int d );
+
 #endif

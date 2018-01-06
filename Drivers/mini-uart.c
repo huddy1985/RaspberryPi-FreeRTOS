@@ -107,17 +107,19 @@ void my_29_int(int nIRQ, void *pParam){
 	unsigned char status;
 	unsigned int rb,rc;
 
+    //hexstring(0x87654321);
 	//return;
 	rb = GET32(AUX_MU_IIR_REG);
 	if(rb & UART_IIR_NO_INT)
 		return;
 
+    //hexstring(0x87654321);
 	//this counter is just for debugging
 	int_rx_count++;
 	if(int_rx_count>'Z')
 		int_rx_count = 'A';
 
-    SetGpio(47, x);
+    //SetGpio(47, x);
     x = 1 - x;
 
 	status = GET32(AUX_MU_LSR_REG);
@@ -126,8 +128,8 @@ void my_29_int(int nIRQ, void *pParam){
 		serial8250_rx_chars();
 
 
-        mini_uart_write(chars,4);
-        chars[0] = 'A' + ((chars[0]-'A' + 1)% ABC_LEN);
+        //mini_uart_write(chars,4);
+        //chars[0] = 'A' + ((chars[0]-'A' + 1)% ABC_LEN);
 	}
 
 	if( tx_to_write > 0 && (status & UART_LSR_THRE)) {
@@ -217,4 +219,39 @@ int mini_uart_read(char *buf, int count){
 		rx_to_write--;
 	}
 	return i;
+}
+
+//------------------------------------------------------------------------
+void uart_putc ( unsigned int c )
+{
+    while(1)
+        {
+            if(GET32(AUX_MU_LSR_REG)&0x20) break;
+        }
+    PUT32(AUX_MU_IO_REG,c);
+}
+//------------------------------------------------------------------------
+void hexstrings ( unsigned int d )
+{
+    //unsigned int ra;
+    unsigned int rb;
+    unsigned int rc;
+
+    rb=32;
+    while(1)
+        {
+            rb-=4;
+            rc=(d>>rb)&0xF;
+            if(rc>9) rc+=0x37; else rc+=0x30;
+            uart_putc(rc);
+            if(rb==0) break;
+        }
+    uart_putc(0x20);
+}
+//------------------------------------------------------------------------
+void hexstring ( unsigned int d )
+{
+    hexstrings(d);
+    uart_putc(0x0D);
+    uart_putc(0x0A);
 }

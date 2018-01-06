@@ -408,11 +408,16 @@ static tskTCB *prvAllocateTCBAndStack( unsigned short usStackDepth, portSTACK_TY
  * TASK CREATION API documented in task.h
  *----------------------------------------------------------*/
 
-void xInitPxCurrentTCB(){
+long* xInitPxCurrentTCB(){
 
-	long* top = pvPortMalloc( sizeof( long ) );
+	long* top = pvPortMalloc( 1024*sizeof( long ) );
+
+	for(; ((long)top) % 16 != 0; top++)
+		//top+=128;
+		//top = (long)top &32; //align
 
 	pxCurrentTCB = top;
+	return top;
 
 }
 

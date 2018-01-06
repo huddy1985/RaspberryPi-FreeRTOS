@@ -283,7 +283,7 @@ typedef struct xTASK_PARAMTERS
  */
 #define xTaskCreate( pvTaskCode, pcName, usStackDepth, pvParameters, uxPriority, pxCreatedTask ) xTaskGenericCreate( ( pvTaskCode ), ( pcName ), ( usStackDepth ), ( pvParameters ), ( uxPriority ), ( pxCreatedTask ), ( NULL ), ( NULL ) )
 
-	void xInitPxCurrentTCB();
+long* xInitPxCurrentTCB();
 /**
  * task. h
  *<pre>
